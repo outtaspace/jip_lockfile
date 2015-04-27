@@ -17,6 +17,7 @@ WriteMakefile(
     BUILD_REQUIRES => {
         'Test::More' => 0,
         'English'    => 0,
+        'File::Temp' => 0,
     },
     PREREQ_PM => {
         'Carp'           => 0,
