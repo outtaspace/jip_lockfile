@@ -26,8 +26,14 @@ sub new {
     # Class to object
     return bless({}, $class)
         ->_set_is_locked(0)
-        ->_set_path_to_file($param{'lock_file'})
+        ->_set_lock_file($param{'lock_file'})
         ->_set_fh(undef);
+}
+
+# Accessor
+sub get_lock_file {
+    my $self = shift;
+    return $self->{'lock_file'};
 }
 
 # Lock or raise an exception
@@ -37,8 +43,8 @@ sub lock {
     # Re-locking changes nothing
     return $self if $self->_get_is_locked;
 
-    my $fh = IO::File->new($self->_get_path_to_file, O_WRONLY|O_CREAT)
-        or croak sprintf(qq{Can't open "%s": %s\n}, $self->_get_path_to_file, $OS_ERROR);
+    my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT)
+        or croak sprintf(qq{Can't open "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
     flock $fh, LOCK_EX
         or croak sprintf(qq{Can't lock "%s": %s\n}, $OS_ERROR);
@@ -56,7 +62,7 @@ sub try_lock {
     # Re-locking changes nothing
     return $self if $self->_get_is_locked;
 
-    my $fh = IO::File->new($self->_get_path_to_file, O_WRONLY|O_CREAT);
+    my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT);
 
     if ($fh and flock $fh, LOCK_EX) {
         $fh->print($self->_lock_message())
@@ -83,10 +89,17 @@ sub unlock {
     return $self if not $self->_get_is_locked;
 
     # Close filehandle before file removing
-    unlink $self->_set_fh(undef)->_get_path_to_file
-        or croak sprintf(qq{Can't unlink "%s": %s\n}, $self->_get_path_to_file, $OS_ERROR);
+    unlink $self->_set_fh(undef)->get_lock_file
+        or croak sprintf(qq{Can't unlink "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
     $self->_set_is_locked(0);
+}
+
+# unlocking on scope exit
+sub DESTROY {
+    my $self = shift;
+
+    $self->unlock;
 }
 
 sub _set_is_locked {
@@ -111,15 +124,10 @@ sub _get_fh {
     return $self->{'filehandle'};
 }
 
-sub _set_path_to_file {
+sub _set_lock_file {
     my ($self, $path_to_file) = @ARG;
-    $self->{'path_to_file'} = $path_to_file;
+    $self->{'lock_file'} = $path_to_file;
     return $self;
-}
-
-sub _get_path_to_file {
-    my $self = shift;
-    return $self->{'path_to_file'};
 }
 
 sub _lock_message {

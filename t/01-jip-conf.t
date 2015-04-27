@@ -6,7 +6,9 @@ use Test::More;
 use File::Temp;
 use English qw(-no_match_vars);
 
-plan tests => 4;
+use constant NEED_TMP_FILE => 1;
+
+plan tests => 7;
 
 subtest 'Require some module' => sub {
     plan tests => 2;
@@ -23,7 +25,7 @@ subtest 'Require some module' => sub {
 };
 
 subtest 'new()' => sub {
-    plan tests => 6;
+    plan tests => 7;
 
     eval { JIP::LockFile->new };
     like $EVAL_ERROR, qr{Mandatory \s argument \s "lock_file" \s is \s missing}x;
@@ -39,7 +41,9 @@ subtest 'new()' => sub {
 
     isa_ok $obj, 'JIP::LockFile';
 
-    can_ok $obj, qw(new lock try_lock unlock is_locked);
+    can_ok $obj, qw(new get_lock_file lock try_lock unlock is_locked);
+
+    is $obj->get_lock_file, $EXECUTABLE_NAME;
 };
 
 subtest 'not is_locked() at startup' => sub {
@@ -53,6 +57,46 @@ subtest 'unlock on non-is_locked() changes nothing' => sub {
 
     is ref(init_obj()->unlock), 'JIP::LockFile';
     cmp_ok init_obj()->is_locked, '==', 0;
+};
+
+subtest 'lock()' => sub {
+    plan tests => 4;
+
+    my $obj = init_obj(NEED_TMP_FILE);
+
+    is ref($obj->lock), 'JIP::LockFile';
+    cmp_ok $obj->is_locked, '==', 1;
+
+    # Re-locking changes nothing
+    is ref($obj->lock), 'JIP::LockFile';
+    cmp_ok $obj->is_locked, '==', 1;
+};
+
+subtest 'unlock()' => sub {
+    plan tests => 3;
+
+    my $obj = init_obj(NEED_TMP_FILE)->lock;
+
+    ok -f $obj->get_lock_file;
+
+    $obj->unlock;
+
+    cmp_ok $obj->is_locked, '==', 0;
+    ok not -f $obj->get_lock_file;
+};
+
+subtest 'unlocking on scope exit' => sub {
+    plan tests => 1;
+
+    my $lock_file;
+
+    {
+        my $obj = init_obj(NEED_TMP_FILE);
+        $lock_file = $obj->get_lock_file;
+        $obj->lock;
+    }
+
+    ok not -f $lock_file;
 };
 
 sub init_obj {
