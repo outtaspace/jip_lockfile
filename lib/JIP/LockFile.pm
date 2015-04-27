@@ -154,8 +154,24 @@ Perhaps a little code snippet.
     $foo->lock;           # lock or raise exception
     eval { $wtf->lock; }; # raise exception
 
+    # Can check its status in case you forgot
+    $foo->is_locked; # 1
+    $wtf->is_locked; # 0
+
     $foo->lock; # Re-locking changes nothing
 
+    # But trying to get a lock is ok
+    $wtf->try_lock;  # 0
+    $wtf->is_locked; # 0
+
+    # You can manually unlock
+    $foo->unlock;
+
+    # Re-unlocking changes nothing
+    $foo->unlock;
+
+    # ... or unlocking is automatic on scope exit
+    undef $foo;
 
 =head1 AUTHOR
 
