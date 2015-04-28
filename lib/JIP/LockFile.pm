@@ -26,7 +26,7 @@ sub new {
     # Class to object
     return bless({}, $class)
         ->_set_is_locked(0)
-        ->_set_lock_file($param{'lock_file'})
+        ->_set_lock_file($lock_file)
         ->_set_fh(undef);
 }
 
@@ -41,7 +41,7 @@ sub lock {
     my $self = shift;
 
     # Re-locking changes nothing
-    return $self if $self->_get_is_locked;
+    return $self if $self->is_locked;
 
     my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT)
         or croak sprintf(qq{Can't open "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
@@ -50,7 +50,7 @@ sub lock {
         or croak sprintf(qq{Can't lock "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
     $fh->print($self->_lock_message())
-        or croak sprintf(qq{Can't write message to file: %s}, $OS_ERROR);
+        or croak sprintf(qq{Can't write message to file: %s\n}, $OS_ERROR);
 
     return $self->_set_fh($fh)->_set_is_locked(1);
 }
@@ -60,13 +60,13 @@ sub try_lock {
     my $self = shift;
 
     # Re-locking changes nothing
-    return $self if $self->_get_is_locked;
+    return $self if $self->is_locked;
 
     my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT);
 
     if ($fh and flock $fh, LOCK_EX|LOCK_NB) {
         $fh->print($self->_lock_message())
-            or croak sprintf(qq{Can't write message to file: %s}, $OS_ERROR);
+            or croak sprintf(qq{Can't write message to file: %s\n}, $OS_ERROR);
 
         return $self->_set_fh($fh)->_set_is_locked(1);
     }
@@ -86,7 +86,7 @@ sub unlock {
     my $self = shift;
 
     # Re-unlocking changes nothing
-    return $self if not $self->_get_is_locked;
+    return $self if not $self->is_locked;
 
     # Close filehandle before file removing
     unlink $self->_set_fh(undef)->get_lock_file
