@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 use 5.006;
 use strict;
 use warnings FATAL => 'all';
@@ -5,9 +7,9 @@ use Test::More;
 use File::Temp;
 use English qw(-no_match_vars);
 
-use constant NEED_TMP_FILE => 1;
-
 plan tests => 9;
+
+my $NEED_TMP_FILE = 1;
 
 subtest 'Require some module' => sub {
     plan tests => 2;
@@ -18,7 +20,7 @@ subtest 'Require some module' => sub {
     diag(
         sprintf 'Testing JIP::LockFile %s, Perl %s, %s',
             $JIP::LockFile::VERSION,
-            $OLD_PERL_VERSION,
+            $PERL_VERSION,
             $EXECUTABLE_NAME,
     );
 };
@@ -26,14 +28,17 @@ subtest 'Require some module' => sub {
 subtest 'new()' => sub {
     plan tests => 7;
 
-    eval { JIP::LockFile->new };
-    like $EVAL_ERROR, qr{Mandatory \s argument \s "lock_file" \s is \s missing}x;
+    eval { JIP::LockFile->new } or do {
+        like $EVAL_ERROR, qr{Mandatory \s argument \s "lock_file" \s is \s missing}x;
+    };
 
-    eval { JIP::LockFile->new(lock_file => undef) };
-    like $EVAL_ERROR, qr{Bad \s argument \s "lock_file"}x;
+    eval { JIP::LockFile->new(lock_file => undef) } or do {
+        like $EVAL_ERROR, qr{Bad \s argument \s "lock_file"}x;
+    };
 
-    eval { JIP::LockFile->new(lock_file => q{}) };
-    like $EVAL_ERROR, qr{Bad \s argument \s "lock_file"}x;
+    eval { JIP::LockFile->new(lock_file => q{}) } or do {
+        like $EVAL_ERROR, qr{Bad \s argument \s "lock_file"}x;
+    };
 
     my $obj = init_obj();
     ok $obj, 'got instance of JIP::LockFile';
@@ -48,39 +53,39 @@ subtest 'new()' => sub {
 subtest 'not is_locked() at startup' => sub {
     plan tests => 1;
 
-    cmp_ok init_obj()->is_locked, '==', 0;
+    cmp_ok init_obj()->is_locked, q{==}, 0;
 };
 
 subtest 'unlock on non-is_locked() changes nothing' => sub {
     plan tests => 2;
 
     is ref(init_obj()->unlock), 'JIP::LockFile';
-    cmp_ok init_obj()->is_locked, '==', 0;
+    cmp_ok init_obj()->is_locked, q{==}, 0;
 };
 
 subtest 'lock()' => sub {
     plan tests => 4;
 
-    my $obj = init_obj(NEED_TMP_FILE);
+    my $obj = init_obj($NEED_TMP_FILE);
 
     is ref($obj->lock), 'JIP::LockFile';
-    cmp_ok $obj->is_locked, '==', 1;
+    cmp_ok $obj->is_locked, q{==}, 1;
 
     # Re-locking changes nothing
     is ref($obj->lock), 'JIP::LockFile';
-    cmp_ok $obj->is_locked, '==', 1;
+    cmp_ok $obj->is_locked, q{==}, 1;
 };
 
 subtest 'unlock()' => sub {
     plan tests => 3;
 
-    my $obj = init_obj(NEED_TMP_FILE)->lock;
+    my $obj = init_obj($NEED_TMP_FILE)->lock;
 
     ok -f $obj->get_lock_file;
 
     $obj->unlock;
 
-    cmp_ok $obj->is_locked, '==', 0;
+    cmp_ok $obj->is_locked, q{==}, 0;
     ok not -f $obj->get_lock_file;
 };
 
@@ -90,7 +95,7 @@ subtest 'unlocking on scope exit' => sub {
     my $lock_file;
 
     {
-        my $obj = init_obj(NEED_TMP_FILE);
+        my $obj = init_obj($NEED_TMP_FILE);
         $lock_file = $obj->get_lock_file;
         $obj->lock;
     }
@@ -101,21 +106,22 @@ subtest 'unlocking on scope exit' => sub {
 subtest 'Lock or raise an exception' => sub {
     plan tests => 1;
 
-    my $obj       = init_obj(NEED_TMP_FILE)->lock;
+    my $obj       = init_obj($NEED_TMP_FILE)->lock;
     my $lock_file = $obj->get_lock_file;
 
-    eval { JIP::LockFile->new(lock_file => $lock_file)->lock };
-    like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file":}x;
+    eval { JIP::LockFile->new(lock_file => $lock_file)->lock } or do {
+        like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file":}x;
+    };
 };
 
 subtest 'try_lock()' => sub {
     plan tests => 2;
 
-    my $obj       = init_obj(NEED_TMP_FILE)->try_lock;
+    my $obj       = init_obj($NEED_TMP_FILE)->try_lock;
     my $lock_file = $obj->get_lock_file;
 
     # Re-locking changes nothing
-    cmp_ok $obj->try_lock->is_locked, '==', 1;
+    cmp_ok $obj->try_lock->is_locked, q{==}, 1;
 
     # Or just return undef
     is(JIP::LockFile->new(lock_file => $lock_file)->try_lock, undef);

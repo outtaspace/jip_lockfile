@@ -43,13 +43,13 @@ sub lock {
     return $self if $self->is_locked;
 
     my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT)
-        or croak sprintf(qq{Can't open "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+        or croak(sprintf qq{Can't open "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
     flock $fh, LOCK_EX|LOCK_NB
-        or croak sprintf(qq{Can't lock "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+        or croak(sprintf qq{Can't lock "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
     $fh->print($self->_lock_message())
-        or croak sprintf(qq{Can't write message to file: %s\n}, $OS_ERROR);
+        or croak(sprintf qq{Can't write message to file: %s\n}, $OS_ERROR);
 
     return $self->_set_fh($fh)->_set_is_locked(1);
 }
@@ -65,7 +65,7 @@ sub try_lock {
 
     if ($fh and flock $fh, LOCK_EX|LOCK_NB) {
         $fh->print($self->_lock_message())
-            or croak sprintf(qq{Can't write message to file: %s\n}, $OS_ERROR);
+            or croak(sprintf qq{Can't write message to file: %s\n}, $OS_ERROR);
 
         return $self->_set_fh($fh)->_set_is_locked(1);
     }
@@ -89,16 +89,16 @@ sub unlock {
 
     # Close filehandle before file removing
     unlink $self->_set_fh(undef)->get_lock_file
-        or croak sprintf(qq{Can't unlink "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+        or croak(sprintf qq{Can't unlink "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
-    $self->_set_is_locked(0);
+    return $self->_set_is_locked(0);
 }
 
 # unlocking on scope exit
 sub DESTROY {
     my $self = shift;
 
-    $self->unlock;
+    return $self->unlock;
 }
 
 # private methods ...
@@ -119,11 +119,6 @@ sub _set_fh {
     return $self;
 }
 
-sub _get_fh {
-    my $self = shift;
-    return $self->{'filehandle'};
-}
-
 sub _set_lock_file {
     my ($self, $path_to_file) = @ARG;
     $self->{'lock_file'} = $path_to_file;
@@ -137,6 +132,8 @@ sub _lock_message {
 }
 
 1;
+
+__END__
 
 =head1 NAME
 
