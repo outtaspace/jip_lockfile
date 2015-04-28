@@ -10,7 +10,6 @@ use English qw(-no_match_vars);
 
 our $VERSION = '0.01';
 
-# http://search.cpan.org/~mlawren/Lock-Socket-0.0.6/lib/Lock/Socket.pm
 sub new {
     my ($class, %param) = @ARG;
 
@@ -102,6 +101,7 @@ sub DESTROY {
     $self->unlock;
 }
 
+# private methods ...
 sub _set_is_locked {
     my ($self, $is_locked) = @ARG;
     $self->{'is_locked'} = $is_locked;
@@ -148,19 +148,15 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
     use JIP::LockFile;
 
-    my $lock_file = './path/to/pid_file';
+    my $lock_file = '/path/to/pid_file';
 
     my $foo = JIP::LockFile->new(lock_file => $lock_file);
     my $wtf = JIP::LockFile->new(lock_file => $lock_file);
 
-    $foo->lock;           # lock or raise exception
-    eval { $wtf->lock; }; # raise exception
+    $foo->lock;           # lock
+    eval { $wtf->lock; }; # or raise exception
 
     # Can check its status in case you forgot
     $foo->is_locked; # 1
