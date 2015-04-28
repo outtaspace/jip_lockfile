@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use IO::File;
 use Carp qw(croak);
-use Fcntl qw(LOCK_EX);
+use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
 our $VERSION = '0.01';
@@ -46,8 +46,8 @@ sub lock {
     my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT)
         or croak sprintf(qq{Can't open "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
-    flock $fh, LOCK_EX
-        or croak sprintf(qq{Can't lock "%s": %s\n}, $OS_ERROR);
+    flock $fh, LOCK_EX|LOCK_NB
+        or croak sprintf(qq{Can't lock "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
     $fh->print($self->_lock_message())
         or croak sprintf(qq{Can't write message to file: %s}, $OS_ERROR);
@@ -64,7 +64,7 @@ sub try_lock {
 
     my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT);
 
-    if ($fh and flock $fh, LOCK_EX) {
+    if ($fh and flock $fh, LOCK_EX|LOCK_NB) {
         $fh->print($self->_lock_message())
             or croak sprintf(qq{Can't write message to file: %s}, $OS_ERROR);
 

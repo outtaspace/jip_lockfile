@@ -1,5 +1,4 @@
 use 5.006;
-use utf8;
 use strict;
 use warnings FATAL => 'all';
 use Test::More;
@@ -8,7 +7,7 @@ use English qw(-no_match_vars);
 
 use constant NEED_TMP_FILE => 1;
 
-plan tests => 7;
+plan tests => 8;
 
 subtest 'Require some module' => sub {
     plan tests => 2;
@@ -97,6 +96,16 @@ subtest 'unlocking on scope exit' => sub {
     }
 
     ok not -f $lock_file;
+};
+
+subtest 'Lock or raise an exception' => sub {
+    my $obj       = init_obj(NEED_TMP_FILE)->lock;
+    my $lock_file = $obj->get_lock_file;
+
+    eval { JIP::LockFile->new(lock_file => $lock_file)->lock };
+    like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file":}x;
+
+    done_testing;
 };
 
 sub init_obj {
