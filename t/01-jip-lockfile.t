@@ -14,7 +14,7 @@ my $NEED_TMP_FILE = 1;
 subtest 'Require some module' => sub {
     plan tests => 2;
 
-    use_ok 'JIP::LockFile', '0.01';
+    use_ok 'JIP::LockFile', '0.02';
     require_ok 'JIP::LockFile';
 
     diag(
@@ -64,7 +64,7 @@ subtest 'unlock on non-is_locked() changes nothing' => sub {
 };
 
 subtest 'lock()' => sub {
-    plan tests => 4;
+    plan tests => 5;
 
     my $obj = init_obj($NEED_TMP_FILE);
 
@@ -74,6 +74,8 @@ subtest 'lock()' => sub {
     # Re-locking changes nothing
     is ref($obj->lock), 'JIP::LockFile';
     cmp_ok $obj->is_locked, q{==}, 1;
+
+    like slurp($obj->get_lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$EXECUTABLE_NAME"}]x;
 };
 
 subtest 'unlock()' => sub {
@@ -115,7 +117,7 @@ subtest 'Lock or raise an exception' => sub {
 };
 
 subtest 'try_lock()' => sub {
-    plan tests => 2;
+    plan tests => 3;
 
     my $obj       = init_obj($NEED_TMP_FILE)->try_lock;
     my $lock_file = $obj->get_lock_file;
@@ -125,6 +127,8 @@ subtest 'try_lock()' => sub {
 
     # Or just return undef
     is(JIP::LockFile->new(lock_file => $lock_file)->try_lock, undef);
+
+    like slurp($lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$EXECUTABLE_NAME"}]x;
 };
 
 sub init_obj {
@@ -133,5 +137,15 @@ sub init_obj {
     my $lock_file = $need_tmp_file ? File::Temp->new->filename : $EXECUTABLE_NAME;
 
     return JIP::LockFile->new(lock_file => $lock_file);
+}
+
+sub slurp {
+    my $lock_file = shift;
+
+    return do {
+        local $INPUT_RECORD_SEPARATOR;
+        open my $fh, '<', $lock_file or die $OS_ERROR;
+        <$fh>;
+    };
 }
 

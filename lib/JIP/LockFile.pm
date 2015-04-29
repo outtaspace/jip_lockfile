@@ -8,7 +8,7 @@ use Carp qw(croak);
 use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new {
     my ($class, %param) = @ARG;
@@ -48,6 +48,11 @@ sub lock {
     flock $fh, LOCK_EX|LOCK_NB
         or croak(sprintf qq{Can't lock "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
 
+    truncate $fh, 0
+        or croak(sprintf qq{Can't truncate "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+
+    autoflush $fh 1;
+
     $fh->print($self->_lock_message())
         or croak(sprintf qq{Can't write message to file: %s\n}, $OS_ERROR);
 
@@ -64,6 +69,11 @@ sub try_lock {
     my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT);
 
     if ($fh and flock $fh, LOCK_EX|LOCK_NB) {
+        truncate $fh, 0
+            or croak(sprintf qq{Can't truncate "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+
+        autoflush $fh 1;
+
         $fh->print($self->_lock_message())
             or croak(sprintf qq{Can't write message to file: %s\n}, $OS_ERROR);
 
@@ -141,7 +151,7 @@ JIP::LockFile - application lock/mutex based on files
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 
