@@ -4,11 +4,17 @@ use 5.006;
 use strict;
 use warnings;
 use IO::File;
+use JIP::ClassField;
 use Carp qw(croak);
 use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
+
+has 'lock_file' => (get => '+', set => '-');
+has 'is_locked' => (get => '+', set => '-');
+
+has 'fh' => (set => '-');
 
 sub new {
     my ($class, %param) = @ARG;
@@ -29,12 +35,6 @@ sub new {
         ->_set_fh(undef);
 }
 
-# Accessor
-sub get_lock_file {
-    my $self = shift;
-    return $self->{'lock_file'};
-}
-
 # Lock or raise an exception
 sub lock {
     my $self = shift;
@@ -42,14 +42,14 @@ sub lock {
     # Re-locking changes nothing
     return $self if $self->is_locked;
 
-    my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT)
-        or croak(sprintf qq{Can't open "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+    my $fh = IO::File->new($self->lock_file, O_WRONLY|O_CREAT)
+        or croak(sprintf qq{Can't open "%s": %s\n}, $self->lock_file, $OS_ERROR);
 
     flock $fh, LOCK_EX|LOCK_NB
-        or croak(sprintf qq{Can't lock "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+        or croak(sprintf qq{Can't lock "%s": %s\n}, $self->lock_file, $OS_ERROR);
 
     truncate $fh, 0
-        or croak(sprintf qq{Can't truncate "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+        or croak(sprintf qq{Can't truncate "%s": %s\n}, $self->lock_file, $OS_ERROR);
 
     autoflush $fh 1;
 
@@ -66,11 +66,11 @@ sub try_lock {
     # Re-locking changes nothing
     return $self if $self->is_locked;
 
-    my $fh = IO::File->new($self->get_lock_file, O_WRONLY|O_CREAT);
+    my $fh = IO::File->new($self->lock_file, O_WRONLY|O_CREAT);
 
     if ($fh and flock $fh, LOCK_EX|LOCK_NB) {
         truncate $fh, 0
-            or croak(sprintf qq{Can't truncate "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+            or croak(sprintf qq{Can't truncate "%s": %s\n}, $self->lock_file, $OS_ERROR);
 
         autoflush $fh 1;
 
@@ -84,12 +84,6 @@ sub try_lock {
     }
 }
 
-# But trying to get a lock is ok
-sub is_locked {
-    my $self = shift;
-    return $self->_get_is_locked;
-}
-
 # You can manually unlock
 sub unlock {
     my $self = shift;
@@ -98,8 +92,8 @@ sub unlock {
     return $self if not $self->is_locked;
 
     # Close filehandle before file removing
-    unlink $self->_set_fh(undef)->get_lock_file
-        or croak(sprintf qq{Can't unlink "%s": %s\n}, $self->get_lock_file, $OS_ERROR);
+    unlink $self->_set_fh(undef)->lock_file
+        or croak(sprintf qq{Can't unlink "%s": %s\n}, $self->lock_file, $OS_ERROR);
 
     return $self->_set_is_locked(0);
 }
@@ -109,30 +103,6 @@ sub DESTROY {
     my $self = shift;
 
     return $self->unlock;
-}
-
-# private methods ...
-sub _set_is_locked {
-    my ($self, $is_locked) = @ARG;
-    $self->{'is_locked'} = $is_locked;
-    return $self;
-}
-
-sub _get_is_locked {
-    my $self = shift;
-    return $self->{'is_locked'};
-}
-
-sub _set_fh {
-    my ($self, $fh) = @ARG;
-    $self->{'filehandle'} = $fh;
-    return $self;
-}
-
-sub _set_lock_file {
-    my ($self, $path_to_file) = @ARG;
-    $self->{'lock_file'} = $path_to_file;
-    return $self;
 }
 
 sub _lock_message {

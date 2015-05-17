@@ -14,7 +14,7 @@ my $NEED_TMP_FILE = 1;
 subtest 'Require some module' => sub {
     plan tests => 2;
 
-    use_ok 'JIP::LockFile', '0.02';
+    use_ok 'JIP::LockFile', '0.03';
     require_ok 'JIP::LockFile';
 
     diag(
@@ -45,9 +45,9 @@ subtest 'new()' => sub {
 
     isa_ok $obj, 'JIP::LockFile';
 
-    can_ok $obj, qw(new get_lock_file lock try_lock unlock is_locked);
+    can_ok $obj, qw(new lock_file lock try_lock unlock is_locked);
 
-    is $obj->get_lock_file, $EXECUTABLE_NAME;
+    is $obj->lock_file, $EXECUTABLE_NAME;
 };
 
 subtest 'not is_locked() at startup' => sub {
@@ -75,7 +75,7 @@ subtest 'lock()' => sub {
     is ref($obj->lock), 'JIP::LockFile';
     cmp_ok $obj->is_locked, q{==}, 1;
 
-    like slurp($obj->get_lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$EXECUTABLE_NAME"}]x;
+    like slurp($obj->lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$EXECUTABLE_NAME"}]x;
 };
 
 subtest 'unlock()' => sub {
@@ -83,12 +83,12 @@ subtest 'unlock()' => sub {
 
     my $obj = init_obj($NEED_TMP_FILE)->lock;
 
-    ok -f $obj->get_lock_file;
+    ok -f $obj->lock_file;
 
     $obj->unlock;
 
     cmp_ok $obj->is_locked, q{==}, 0;
-    ok not -f $obj->get_lock_file;
+    ok not -f $obj->lock_file;
 };
 
 subtest 'unlocking on scope exit' => sub {
@@ -98,7 +98,7 @@ subtest 'unlocking on scope exit' => sub {
 
     {
         my $obj = init_obj($NEED_TMP_FILE);
-        $lock_file = $obj->get_lock_file;
+        $lock_file = $obj->lock_file;
         $obj->lock;
     }
 
@@ -109,7 +109,7 @@ subtest 'Lock or raise an exception' => sub {
     plan tests => 1;
 
     my $obj       = init_obj($NEED_TMP_FILE)->lock;
-    my $lock_file = $obj->get_lock_file;
+    my $lock_file = $obj->lock_file;
 
     eval { JIP::LockFile->new(lock_file => $lock_file)->lock } or do {
         like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file":}x;
@@ -120,7 +120,7 @@ subtest 'try_lock()' => sub {
     plan tests => 3;
 
     my $obj       = init_obj($NEED_TMP_FILE)->try_lock;
-    my $lock_file = $obj->get_lock_file;
+    my $lock_file = $obj->lock_file;
 
     # Re-locking changes nothing
     cmp_ok $obj->try_lock->is_locked, q{==}, 1;

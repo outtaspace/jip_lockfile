@@ -20,8 +20,9 @@ WriteMakefile(
         'File::Temp' => 0,
     },
     PREREQ_PM => {
-        'Carp'           => 0,
-        'IO::File' => 0,
+        'Carp'            => 0,
+        'IO::File'        => 0,
+        'JIP::ClassField' => '0.01',
     },
     dist  => {COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
     clean => {FILES => 'JIP-LockFile-*'},
