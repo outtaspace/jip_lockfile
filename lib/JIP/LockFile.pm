@@ -11,10 +11,10 @@ use English qw(-no_match_vars);
 
 our $VERSION = '0.03';
 
-has 'lock_file' => (get => '+', set => '-');
-has 'is_locked' => (get => '+', set => '-');
+has lock_file => (get => '+', set => '-');
+has is_locked => (get => '+', set => '-');
 
-has 'fh' => (set => '-');
+has fh => (set => '-');
 
 sub new {
     my ($class, %param) = @ARG;
@@ -153,6 +153,10 @@ Version 0.02
 
     # ... or unlocking is automatic on scope exit
     undef $foo;
+
+=head1 SEE ALSO
+
+Lock::File, Lock::Socket and JIP::LockSocket
 
 =head1 AUTHOR
 
