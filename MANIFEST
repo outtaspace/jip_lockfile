@@ -3,5 +3,4 @@ lib/JIP/LockFile.pm
 Makefile.PL
 MANIFEST			This list of files
 README
-t/00-load.t
-t/01-jip-lockfile.t
+t/00-jip-lockfile.t
