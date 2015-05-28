@@ -9,7 +9,7 @@ use Carp qw(croak);
 use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 has lock_file => (get => '+', set => '-');
 has is_locked => (get => '+', set => '-');

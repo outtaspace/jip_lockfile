@@ -1,5 +1,8 @@
 Revision history for JIP-LockFile
 
+0.04    2015-05-28
+        Small changes in distro.
+
 0.03    2015-05-17
         get_lock_file() is now lock_file().
         JIP::ClassField for getters/setters.
