@@ -75,7 +75,10 @@ subtest 'lock()' => sub {
     is ref($obj->lock), 'JIP::LockFile';
     cmp_ok $obj->is_locked, q{==}, 1;
 
-    like slurp($obj->lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$EXECUTABLE_NAME"}]x;
+    {
+        my $en = quotemeta $EXECUTABLE_NAME;
+        like slurp($obj->lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
+    }
 };
 
 subtest 'unlock()' => sub {
@@ -108,10 +111,10 @@ subtest 'unlocking on scope exit' => sub {
 subtest 'Lock or raise an exception' => sub {
     plan tests => 1;
 
-    my $obj       = init_obj($NEED_TMP_FILE)->lock;
-    my $lock_file = $obj->lock_file;
+    my $obj = init_obj($NEED_TMP_FILE)->lock;
 
-    eval { JIP::LockFile->new(lock_file => $lock_file)->lock } or do {
+    eval { JIP::LockFile->new(lock_file => $obj->lock_file)->lock } or do {
+        my $lock_file = quotemeta $obj->lock_file;
         like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file":}x;
     };
 };
@@ -128,7 +131,10 @@ subtest 'try_lock()' => sub {
     # Or just return undef
     is(JIP::LockFile->new(lock_file => $lock_file)->try_lock, undef);
 
-    like slurp($lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$EXECUTABLE_NAME"}]x;
+    {
+        my $en = quotemeta $EXECUTABLE_NAME;
+        like slurp($lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
+    }
 };
 
 sub init_obj {
