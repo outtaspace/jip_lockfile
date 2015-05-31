@@ -77,7 +77,8 @@ subtest 'lock()' => sub {
 
     {
         my $en = quotemeta $EXECUTABLE_NAME;
-        like slurp($obj->lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
+        like slurp_lock_file($obj),
+            qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
     }
 };
 
@@ -133,7 +134,8 @@ subtest 'try_lock()' => sub {
 
     {
         my $en = quotemeta $EXECUTABLE_NAME;
-        like slurp($lock_file), qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
+        like slurp_lock_file($obj),
+            qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
     }
 };
 
@@ -145,13 +147,13 @@ sub init_obj {
     return JIP::LockFile->new(lock_file => $lock_file);
 }
 
-sub slurp {
-    my $lock_file = shift;
+sub slurp_lock_file {
+    my $obj = shift;
 
-    return do {
-        local $INPUT_RECORD_SEPARATOR;
-        open my $fh, '<', $lock_file or die $OS_ERROR;
-        <$fh>;
-    };
+    my $fh = $obj->_fh;
+
+    $fh->seek(0, 0);
+
+    return $fh->getline;
 }
 

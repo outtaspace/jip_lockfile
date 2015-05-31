@@ -14,7 +14,7 @@ our $VERSION = '0.04';
 has lock_file => (get => '+', set => '-');
 has is_locked => (get => '+', set => '-');
 
-has fh => (set => '-');
+has fh => (get => '-', set => '-');
 
 sub new {
     my ($class, %param) = @ARG;
@@ -42,7 +42,7 @@ sub lock {
     # Re-locking changes nothing
     return $self if $self->is_locked;
 
-    my $fh = IO::File->new($self->lock_file, O_WRONLY|O_CREAT)
+    my $fh = IO::File->new($self->lock_file, O_RDWR|O_CREAT)
         or croak(sprintf qq{Can't open "%s": %s\n}, $self->lock_file, $OS_ERROR);
 
     flock $fh, LOCK_EX|LOCK_NB
@@ -66,7 +66,7 @@ sub try_lock {
     # Re-locking changes nothing
     return $self if $self->is_locked;
 
-    my $fh = IO::File->new($self->lock_file, O_WRONLY|O_CREAT);
+    my $fh = IO::File->new($self->lock_file, O_RDWR|O_CREAT);
 
     if ($fh and flock $fh, LOCK_EX|LOCK_NB) {
         truncate $fh, 0
