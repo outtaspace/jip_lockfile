@@ -9,7 +9,7 @@ use Carp qw(croak);
 use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 has lock_file => (get => '+', set => '-');
 has is_locked => (get => '+', set => '-');
@@ -121,7 +121,7 @@ JIP::LockFile - application lock/mutex based on files
 
 =head1 VERSION
 
-Version 0.02
+Version 0.05
 
 =head1 SYNOPSIS
 
