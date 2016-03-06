@@ -4,17 +4,16 @@ use 5.006;
 use strict;
 use warnings;
 use IO::File;
-use JIP::ClassField;
+use JIP::ClassField 0.05;
 use Carp qw(croak);
 use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
 our $VERSION = '0.05';
 
-has lock_file => (get => '+', set => '-');
-has is_locked => (get => '+', set => '-');
+has [qw(lock_file is_locked)] => (get => q{+}, set => q{-});
 
-has fh => (get => '-', set => '-');
+has fh => (get => q{-}, set => q{-});
 
 sub new {
     my ($class, %param) = @ARG;
