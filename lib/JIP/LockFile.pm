@@ -120,7 +120,7 @@ JIP::LockFile - application lock/mutex based on files
 
 =head1 VERSION
 
-Version 0.05
+This document describes C<JIP::LockFile> version C<0.05>.
 
 =head1 SYNOPSIS
 
@@ -155,7 +155,7 @@ Version 0.05
 
 =head1 SEE ALSO
 
-Lock::File, Lock::Socket and JIP::LockSocket
+L<Lock::File>, L<Lock::Socket> and L<JIP::LockSocket>.
 
 =head1 AUTHOR
 
