@@ -163,7 +163,7 @@ Vladimir Zhavoronkov, C<< <flyweight at yandex.ru> >>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2015 Vladimir Zhavoronkov.
+Copyright 2015-2018 Vladimir Zhavoronkov.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the the Artistic License (2.0). You may obtain a
