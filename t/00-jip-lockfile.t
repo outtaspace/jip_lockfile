@@ -9,7 +9,7 @@ use File::Temp;
 use English qw(-no_match_vars);
 
 BEGIN {
-    plan tests => 10;
+    plan tests => 12;
 
     use_ok 'JIP::LockFile', '0.051';
 };
@@ -84,13 +84,10 @@ subtest 'lock()' => sub {
     is ref($obj->lock), 'JIP::LockFile';
     cmp_ok $obj->is_locked, q{==}, 1;
 
-    {
-        my $en = quotemeta $EXECUTABLE_NAME;
-        like slurp_lock_file($obj), qr{
-            ^
-            {"pid":"$PROCESS_ID","executable_name":"$en"}
-        }x;
-    }
+    is_deeply $obj->get_lock_data, {
+        pid             => $PROCESS_ID,
+        executable_name => $EXECUTABLE_NAME,
+    };
 };
 
 subtest 'unlock()' => sub {
@@ -148,13 +145,29 @@ subtest 'try_lock()' => sub {
     # Or just return undef
     is(JIP::LockFile->new(lock_file => $lock_file)->try_lock, undef);
 
-    {
-        my $en = quotemeta $EXECUTABLE_NAME;
-        like slurp_lock_file($obj), qr{
-            ^
-            {"pid":"$PROCESS_ID","executable_name":"$en"}
-        }x;
-    }
+    is_deeply $obj->get_lock_data, {
+        pid             => $PROCESS_ID,
+        executable_name => $EXECUTABLE_NAME,
+    };
+};
+
+subtest 'get_lock_data() before lock' => sub {
+    plan tests => 1;
+
+    my $obj = init_obj($NEED_TMP_FILE);
+
+    is $obj->get_lock_data, undef;
+};
+
+subtest 'get_lock_data() after lock' => sub {
+    plan tests => 1;
+
+    my $obj = init_obj($NEED_TMP_FILE)->try_lock;
+
+    is_deeply $obj->get_lock_data, {
+        pid             => $PROCESS_ID,
+        executable_name => $EXECUTABLE_NAME,
+    };
 };
 
 sub init_obj {
@@ -166,15 +179,5 @@ sub init_obj {
         : $EXECUTABLE_NAME;
 
     return JIP::LockFile->new(lock_file => $lock_file);
-}
-
-sub slurp_lock_file {
-    my ($obj) = @ARG;
-
-    my $fh = $obj->_fh;
-
-    $fh->seek(0, 0);
-
-    return $fh->getline;
 }
 

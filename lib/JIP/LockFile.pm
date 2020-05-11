@@ -52,52 +52,14 @@ sub new {
 sub lock {
     my ($self) = @ARG;
 
-    # Re-locking changes nothing
-    return $self if $self->is_locked;
-
-    my $fh = IO::File->new($self->lock_file, O_RDWR|O_CREAT);
-
-    if (!$fh) {
-        croak sprintf(q{Can't open "%s": %s}, $self->lock_file, $OS_ERROR);
-    }
-
-    if (!flock $fh, LOCK_EX|LOCK_NB) {
-        croak sprintf(q{Can't lock "%s": %s}, $self->lock_file, $OS_ERROR);
-    }
-
-    if (!truncate $fh, 0) {
-        croak sprintf(q{Can't truncate "%s": %s}, $self->lock_file, $OS_ERROR);
-    }
-
-    autoflush $fh 1;
-
-    if (!$fh->print($self->_lock_message())) {
-        croak sprintf(q{Can't write message to file: %s}, $OS_ERROR);
-    }
-
-    return $self->_set_fh($fh)->_set_is_locked(1);
+    return $self->_lock();
 }
 
 # Or just return undef
 sub try_lock {
     my ($self) = @ARG;
 
-    # Re-locking changes nothing
-    return $self if $self->is_locked;
-
-    my $fh = IO::File->new($self->lock_file, O_RDWR|O_CREAT);
-
-    return if !$fh || !flock $fh, LOCK_EX|LOCK_NB;
-
-    if (!truncate $fh, 0) {
-        croak sprintf(q{Can't truncate "%s": %s}, $self->lock_file, $OS_ERROR);
-    }
-
-    if (!$fh->print($self->_lock_message())) {
-        croak sprintf(q{Can't write message to file: %s}, $OS_ERROR);
-    }
-
-    return $self->_set_fh($fh)->_set_is_locked(1);
+    return $self->_lock(try => 1);
 }
 
 # You can manually unlock
@@ -117,11 +79,87 @@ sub unlock {
     return $self->_set_is_locked(0);
 }
 
+sub get_lock_data {
+    my ($self) = @_;
+
+    my $line;
+    {
+        my $fh
+            = $self->is_locked
+            ? $self->_fh
+            : $self->_init_file_handle;
+
+        return if !$fh;
+
+        $fh->seek(0, 0);
+
+        $line = $fh->getline();
+    }
+
+    return if !$line;
+
+    chomp $line;
+
+    my ($pid, $executable_name) = $line =~ m{
+        ^
+        {
+            "pid":"(\d+)"
+            ,
+            "executable_name":"( [^""]+ )"
+        }
+        $
+    }x;
+
+    return {
+        pid             => $pid,
+        executable_name => $executable_name,
+    };
+}
+
 # unlocking on scope exit
 sub DESTROY {
     my ($self) = @ARG;
 
     return $self->unlock;
+}
+
+sub _init_file_handle {
+    my ($self) = @ARG;
+
+    return IO::File->new($self->lock_file, O_RDWR | O_CREAT);
+}
+
+sub _lock {
+    my ($self, %param) = @_;
+
+    # Re-locking changes nothing
+    return $self if $self->is_locked;
+
+    my $fh = $self->_init_file_handle;
+
+    if (!$fh) {
+        return if $param{'try'};
+
+        croak sprintf(q{Can't open "%s": %s}, $self->lock_file, $OS_ERROR);
+    }
+
+    if (!flock $fh, LOCK_EX | LOCK_NB) {
+        return if $param{'try'};
+
+        croak sprintf(q{Can't lock "%s": %s}, $self->lock_file, $OS_ERROR);
+    }
+
+    if (!truncate $fh, 0) {
+        croak sprintf(q{Can't truncate "%s": %s}, $self->lock_file, $OS_ERROR);
+    }
+
+    autoflush $fh 1;
+
+    if (!$fh->print($self->_lock_message)) {
+        croak sprintf(q{Can't write message to file: %s}, $OS_ERROR);
+    }
+
+    return $self->_set_fh($fh)->_set_is_locked(1);
 }
 
 sub _lock_message {
@@ -195,6 +233,10 @@ This document describes C<JIP::LockFile> version C<0.051>.
     # But trying to get a lock is ok
     $wtf->try_lock;  # 0
     $wtf->is_locked; # 0
+
+    # Data from lock-file
+    $foo->get_lock_data->{pid};             # $PROCESS_ID
+    $foo->get_lock_data->{executable_name}; # $EXECUTABLE_NAME
 
     # You can manually unlock
     $foo->unlock;
