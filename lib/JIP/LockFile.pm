@@ -9,7 +9,7 @@ use Carp qw(croak);
 use Fcntl qw(LOCK_EX LOCK_NB);
 use English qw(-no_match_vars);
 
-our $VERSION = '0.051';
+our $VERSION = '0.06';
 
 sub is_locked {
     my ($self) = @ARG;
@@ -210,7 +210,7 @@ JIP::LockFile - application lock/mutex based on files
 
 =head1 VERSION
 
-This document describes C<JIP::LockFile> version C<0.051>.
+This document describes C<JIP::LockFile> version C<0.06>.
 
 =head1 SYNOPSIS
 
