@@ -3,42 +3,51 @@
 use 5.006;
 use strict;
 use warnings FATAL => 'all';
+
 use Test::More;
 use File::Temp;
 use English qw(-no_match_vars);
 
-plan tests => 9;
+BEGIN {
+    plan tests => 10;
+
+    use_ok 'JIP::LockFile', '0.051';
+};
 
 my $NEED_TMP_FILE = 1;
 
 subtest 'Require some module' => sub {
-    plan tests => 2;
+    plan tests => 1;
 
-    use_ok 'JIP::LockFile', '0.051';
     require_ok 'JIP::LockFile';
 
     diag(
-        sprintf 'Testing JIP::LockFile %s, Perl %s, %s',
+        sprintf(
+            'Testing JIP::LockFile %s, Perl %s, %s',
             $JIP::LockFile::VERSION,
             $PERL_VERSION,
             $EXECUTABLE_NAME,
+        ),
     );
 };
 
 subtest 'new()' => sub {
     plan tests => 7;
 
-    eval { JIP::LockFile->new } or do {
+    eval { JIP::LockFile->new };
+    if ($EVAL_ERROR) {
         like $EVAL_ERROR, qr{Mandatory \s argument \s "lock_file" \s is \s missing}x;
-    };
+    }
 
-    eval { JIP::LockFile->new(lock_file => undef) } or do {
+    eval { JIP::LockFile->new(lock_file => undef) };
+    if ($EVAL_ERROR) {
         like $EVAL_ERROR, qr{Bad \s argument \s "lock_file"}x;
-    };
+    }
 
-    eval { JIP::LockFile->new(lock_file => q{}) } or do {
+    eval { JIP::LockFile->new(lock_file => q{}) };
+    if ($EVAL_ERROR) {
         like $EVAL_ERROR, qr{Bad \s argument \s "lock_file"}x;
-    };
+    }
 
     my $obj = init_obj();
     ok $obj, 'got instance of JIP::LockFile';
@@ -77,8 +86,10 @@ subtest 'lock()' => sub {
 
     {
         my $en = quotemeta $EXECUTABLE_NAME;
-        like slurp_lock_file($obj),
-            qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
+        like slurp_lock_file($obj), qr{
+            ^
+            {"pid":"$PROCESS_ID","executable_name":"$en"}
+        }x;
     }
 };
 
@@ -114,10 +125,15 @@ subtest 'Lock or raise an exception' => sub {
 
     my $obj = init_obj($NEED_TMP_FILE)->lock;
 
-    eval { JIP::LockFile->new(lock_file => $obj->lock_file)->lock } or do {
-        my $lock_file = quotemeta $obj->lock_file;
-        like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file":}x;
+    my $lock_file        = quotemeta $obj->lock_file;
+    my $lock_file_quoted = $lock_file;
+
+    eval {
+        JIP::LockFile->new(lock_file => $obj->lock_file)->lock;
     };
+    if ($EVAL_ERROR) {
+        like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file_quoted":}x;
+    }
 };
 
 subtest 'try_lock()' => sub {
@@ -134,21 +150,26 @@ subtest 'try_lock()' => sub {
 
     {
         my $en = quotemeta $EXECUTABLE_NAME;
-        like slurp_lock_file($obj),
-            qr[^{"pid":"$PROCESS_ID","executable_name":"$en"}]x;
+        like slurp_lock_file($obj), qr{
+            ^
+            {"pid":"$PROCESS_ID","executable_name":"$en"}
+        }x;
     }
 };
 
 sub init_obj {
-    my $need_tmp_file = shift;
+    my ($need_tmp_file) = @ARG;
 
-    my $lock_file = $need_tmp_file ? File::Temp->new->filename : $EXECUTABLE_NAME;
+    my $lock_file
+        = $need_tmp_file
+        ? File::Temp->new->filename
+        : $EXECUTABLE_NAME;
 
     return JIP::LockFile->new(lock_file => $lock_file);
 }
 
 sub slurp_lock_file {
-    my $obj = shift;
+    my ($obj) = @ARG;
 
     my $fh = $obj->_fh;
 

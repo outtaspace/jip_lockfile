@@ -37,7 +37,6 @@ my %write_makefile_param = (
         'Fcntl'           => 0,
         'English'         => 0,
         'IO::File'        => 0,
-        'JIP::ClassField' => '0.05',
     },
     dist  => {COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
     clean => {FILES => 'JIP-LockFile-*'},
