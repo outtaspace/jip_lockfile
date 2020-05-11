@@ -33,7 +33,7 @@ sub new {
 
     # Check "lock_file"
     my $lock_file = $param{'lock_file'};
-    if (!defined $lock_file || !length $lock_file) {
+    if (!length $lock_file) {
         croak q{Bad argument "lock_file"};
     }
 
