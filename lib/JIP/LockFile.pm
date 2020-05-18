@@ -11,24 +11,6 @@ use English qw(-no_match_vars);
 
 our $VERSION = '0.06';
 
-sub is_locked {
-    my ($self) = @ARG;
-
-    return $self->{'is_locked'};
-}
-
-sub lock_file {
-    my ($self) = @ARG;
-
-    return $self->{'lock_file'};
-}
-
-sub error {
-    my ($self) = @ARG;
-
-    return $self->{'error'};
-}
-
 sub new {
     my ($class, %param) = @ARG;
 
@@ -47,12 +29,30 @@ sub new {
     return bless(
         {
             is_locked => 0,
-            lock_file => $lock_file,
             fh        => undef,
             error     => undef,
+            lock_file => $lock_file,
         },
         $class,
     );
+}
+
+sub is_locked {
+    my ($self) = @ARG;
+
+    return $self->{'is_locked'};
+}
+
+sub lock_file {
+    my ($self) = @ARG;
+
+    return $self->{'lock_file'};
+}
+
+sub error {
+    my ($self) = @ARG;
+
+    return $self->{'error'};
 }
 
 # Lock or raise an exception
