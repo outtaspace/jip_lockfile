@@ -54,7 +54,7 @@ subtest 'new()' => sub {
 
     isa_ok $obj, 'JIP::LockFile';
 
-    can_ok $obj, qw(new lock_file lock try_lock unlock is_locked);
+    can_ok $obj, qw(new lock_file lock try_lock unlock is_locked error);
 
     is $obj->lock_file, $EXECUTABLE_NAME;
 };

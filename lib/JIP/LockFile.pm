@@ -23,6 +23,12 @@ sub lock_file {
     return $self->{'lock_file'};
 }
 
+sub error {
+    my ($self) = @ARG;
+
+    return $self->{'error'};
+}
+
 sub new {
     my ($class, %param) = @ARG;
 
@@ -43,6 +49,7 @@ sub new {
             is_locked => 0,
             lock_file => $lock_file,
             fh        => undef,
+            error     => undef,
         },
         $class,
     );
@@ -73,7 +80,9 @@ sub unlock {
     $self->_set_fh(undef);
 
     if (!unlink $self->lock_file) {
-        croak sprintf(q{Can't unlink "%s": %s}, $self->lock_file, $OS_ERROR);
+        $self->_set_error($OS_ERROR);
+
+        croak sprintf(q{Can't unlink "%s": %s}, $self->lock_file, $self->error);
     }
 
     return $self->_set_is_locked(0);
@@ -126,7 +135,13 @@ sub DESTROY {
 sub _init_file_handle {
     my ($self) = @ARG;
 
-    return IO::File->new($self->lock_file, O_RDWR | O_CREAT);
+    my $fh = IO::File->new($self->lock_file, O_RDWR | O_CREAT);
+
+    if (!$fh) {
+        $self->_set_error($OS_ERROR);
+    }
+
+    return $fh;
 }
 
 sub _lock {
@@ -138,25 +153,29 @@ sub _lock {
     my $fh = $self->_init_file_handle;
 
     if (!$fh) {
-        return if $param{'try'};
-
-        croak sprintf(q{Can't open "%s": %s}, $self->lock_file, $OS_ERROR);
+        croak sprintf(q{Can't open "%s": %s}, $self->lock_file, $self->error);
     }
 
     if (!flock $fh, LOCK_EX | LOCK_NB) {
+        $self->_set_error($OS_ERROR);
+
         return if $param{'try'};
 
-        croak sprintf(q{Can't lock "%s": %s}, $self->lock_file, $OS_ERROR);
+        croak sprintf(q{Can't lock "%s": %s}, $self->lock_file, $self->error);
     }
 
     if (!truncate $fh, 0) {
-        croak sprintf(q{Can't truncate "%s": %s}, $self->lock_file, $OS_ERROR);
+        $self->_set_error($OS_ERROR);
+
+        croak sprintf(q{Can't truncate "%s": %s}, $self->lock_file, $self->error);
     }
 
     autoflush $fh 1;
 
     if (!$fh->print($self->_lock_message)) {
-        croak sprintf(q{Can't write message to file: %s}, $OS_ERROR);
+        $self->_set_error($OS_ERROR);
+
+        croak sprintf(q{Can't write message to file: %s}, $self->error);
     }
 
     return $self->_set_fh($fh)->_set_is_locked(1);
@@ -196,6 +215,14 @@ sub _set_fh {
     my ($self, $fh) = @ARG;
 
     $self->{'fh'} = $fh;
+
+    return $self;
+}
+
+sub _set_error {
+    my ($self, $error) = @ARG;
+
+    $self->{'error'} = $error || '<unknown_error>';
 
     return $self;
 }
