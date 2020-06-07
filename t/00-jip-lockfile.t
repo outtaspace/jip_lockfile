@@ -118,23 +118,36 @@ subtest 'unlocking on scope exit' => sub {
 };
 
 subtest 'Lock or raise an exception' => sub {
-    plan tests => 1;
+    plan tests => 4;
 
     my $obj = init_obj($NEED_TMP_FILE)->lock;
 
     my $lock_file        = quotemeta $obj->lock_file;
     my $lock_file_quoted = $lock_file;
 
+    my $concurrent_obj = JIP::LockFile->new(lock_file => $obj->lock_file);
+
+    is $concurrent_obj->error, undef;
+
     eval {
-        JIP::LockFile->new(lock_file => $obj->lock_file)->lock;
+        $concurrent_obj->lock;
     };
     if ($EVAL_ERROR) {
-        like $EVAL_ERROR, qr{^Can't \s lock \s "$lock_file_quoted":}x;
+        like $EVAL_ERROR, qr{
+            ^Can't \s lock \s "$lock_file_quoted":
+            \s
+            Resource \s temporarily \s unavailable
+            \s
+        }x;
     }
+
+    is $concurrent_obj->error, 'Resource temporarily unavailable';
+
+    is_deeply $obj->get_lock_data, $concurrent_obj->get_lock_data;
 };
 
 subtest 'try_lock()' => sub {
-    plan tests => 3;
+    plan tests => 7;
 
     my $obj       = init_obj($NEED_TMP_FILE)->try_lock;
     my $lock_file = $obj->lock_file;
@@ -142,13 +155,26 @@ subtest 'try_lock()' => sub {
     # Re-locking changes nothing
     cmp_ok $obj->try_lock->is_locked, q{==}, 1;
 
+    my $concurrent_obj = JIP::LockFile->new(lock_file => $obj->lock_file);
+
+    is $concurrent_obj->error, undef;
+
     # Or just return undef
-    is(JIP::LockFile->new(lock_file => $lock_file)->try_lock, undef);
+    is($concurrent_obj->try_lock, undef);
 
     is_deeply $obj->get_lock_data, {
         pid             => $PROCESS_ID,
         executable_name => $EXECUTABLE_NAME,
     };
+
+    is $concurrent_obj->error, 'Resource temporarily unavailable';
+
+    is_deeply $obj->get_lock_data, {
+        pid             => $PROCESS_ID,
+        executable_name => $EXECUTABLE_NAME,
+    };
+
+    is_deeply $obj->get_lock_data, $concurrent_obj->get_lock_data;
 };
 
 subtest 'get_lock_data() before lock' => sub {
