@@ -246,7 +246,7 @@ This document describes C<JIP::LockFile> version C<0.06>.
     my $lock_file = '/path/to/pid_file';
 
     my $foo = JIP::LockFile->new(lock_file => $lock_file);
-    my $wtf = JIP::LockFile->new(lock_file => $lock_file);
+    my $wtf = JIP::LockFile->new(lock_file => $foo->lock_file);
 
     $foo->lock;           # lock
     eval { $wtf->lock; }; # or raise exception
@@ -273,6 +273,34 @@ This document describes C<JIP::LockFile> version C<0.06>.
 
     # ... or unlocking is automatic on scope exit
     undef $foo;
+
+=head1 ATTRIBUTES
+
+L<JIP::LockFile> implements the following attributes.
+
+=head2 lock_file
+
+    my $object = JIP::LockFile->new(lock_file => '/path/to/pid_file');
+
+    $object->lock_file; # /path/to/pid_file
+
+=head2 is_locked
+
+    my $object = JIP::LockFile->new(lock_file => '/path/to/pid_file');
+
+    $object->is_locked; # 0
+
+    $object->lock->is_locked; # 1
+
+=head2 error
+
+    my $object = JIP::LockFile->new(lock_file => '/path/to/pid_file');
+
+    $object->lock;
+
+    my $concurrent = JIP::LockFile->new(lock_file => $object->lock_file);
+
+    $concurrent->try_lock->error; # Resource temporarily unavailable
 
 =head1 SEE ALSO
 
