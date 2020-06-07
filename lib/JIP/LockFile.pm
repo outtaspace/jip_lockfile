@@ -197,14 +197,6 @@ sub _set_is_locked {
     return $self;
 }
 
-sub _set_lock_file {
-    my ($self, $lock_file) = @ARG;
-
-    $self->{'lock_file'} = $lock_file;
-
-    return $self;
-}
-
 sub _fh {
     my ($self) = @ARG;
 
