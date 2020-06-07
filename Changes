@@ -1,5 +1,11 @@
 Revision history for JIP-LockFile
 
+0.061   2020-06-09
+        Added error method.
+        More tests.
+        More documentation.
+        Small minor improvements.
+
 0.06    2020-05-11
         Removed dependency from JIP::ClassField.
         Added Perl 5.30 into ".travis.yml".

@@ -11,7 +11,7 @@ use English qw(-no_match_vars);
 BEGIN {
     plan tests => 12;
 
-    use_ok 'JIP::LockFile', '0.06';
+    use_ok 'JIP::LockFile', '0.061';
 };
 
 my $NEED_TMP_FILE = 1;
