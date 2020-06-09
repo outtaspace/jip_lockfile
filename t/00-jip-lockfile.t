@@ -133,15 +133,17 @@ subtest 'Lock or raise an exception' => sub {
         $concurrent_obj->lock;
     };
     if ($EVAL_ERROR) {
+        my $last_error = quotemeta $OS_ERROR;
+
         like $EVAL_ERROR, qr{
             ^Can't \s lock \s "$lock_file_quoted":
             \s
-            Resource \s temporarily \s unavailable
+            $last_error
             \s
         }x;
     }
 
-    is $concurrent_obj->error, 'Resource temporarily unavailable';
+    is $concurrent_obj->error, $OS_ERROR;
 
     is_deeply $obj->get_lock_data, $concurrent_obj->get_lock_data;
 };
@@ -162,12 +164,12 @@ subtest 'try_lock()' => sub {
     # Or just return undef
     is($concurrent_obj->try_lock, undef);
 
+    is $concurrent_obj->error, $OS_ERROR;
+
     is_deeply $obj->get_lock_data, {
         pid             => $PROCESS_ID,
         executable_name => $EXECUTABLE_NAME,
     };
-
-    is $concurrent_obj->error, 'Resource temporarily unavailable';
 
     is_deeply $obj->get_lock_data, {
         pid             => $PROCESS_ID,
